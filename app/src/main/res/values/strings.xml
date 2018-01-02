@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">google_map_trip</string>
+    <string name="title_activity_maps">Map</string>
+</resources>

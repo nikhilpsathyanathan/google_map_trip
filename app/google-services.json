@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "1096469898246",
+    "firebase_url": "https://sacred-brace-190912.firebaseio.com",
+    "project_id": "sacred-brace-190912",
+    "storage_bucket": "sacred-brace-190912.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1096469898246:android:e3f22179065c7af7",
+        "android_client_info": {
+          "package_name": "in.studoob.nikhil.google_map_trip"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1096469898246-vg5k8994o6u3re60l35q7sdcjdrn56kt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "in.studoob.nikhil.google_map_trip",
+            "certificate_hash": "e2680740f7a5df817f17af84f210972a4499fa66"
+          }
+        },
+        {
+          "client_id": "1096469898246-boq7q4khe1jf4e9o146qv7arjgo7ccg2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCwjBBciMI2vBRGIaDmlxHsk6wpJMGQOeM"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1096469898246-boq7q4khe1jf4e9o146qv7arjgo7ccg2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
