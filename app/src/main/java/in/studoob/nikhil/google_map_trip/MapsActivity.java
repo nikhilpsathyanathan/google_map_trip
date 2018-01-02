@@ -15,12 +15,21 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.app.LoaderManager;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
+import android.widget.Toolbar;
 
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.Status;
+import com.google.android.gms.location.places.GeoDataClient;
+import com.google.android.gms.location.places.Place;
+import com.google.android.gms.location.places.PlaceDetectionClient;
+import com.google.android.gms.location.places.Places;
+import com.google.android.gms.location.places.ui.PlaceAutocompleteFragment;
+import com.google.android.gms.location.places.ui.PlaceSelectionListener;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -47,10 +56,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private double lat, lon;
     Location getLastLocation;
 
+    private GeoDataClient mGeoDataClient;
+    private PlaceDetectionClient mPlaceDetectionClient;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+        mGeoDataClient = Places.getGeoDataClient(this, null);
+
+        // Construct a PlaceDetectionClient.
+        mPlaceDetectionClient = Places.getPlaceDetectionClient(this, null);
+
 
         locationManager = (LocationManager)getSystemService
                 (Context.LOCATION_SERVICE);
@@ -75,16 +92,34 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     mMap.clear();
                     mMap.addMarker(new MarkerOptions().position(x).title("Country:" + country + "\nAdress" + adreess + "\nPermises" + permises));
                     mMap.moveCamera(CameraUpdateFactory.newLatLng(x));
-                    mMap.moveCamera(CameraUpdateFactory.zoomBy(10));
+                    mMap.moveCamera(CameraUpdateFactory.zoomBy(14));
+                    Toast.makeText(MapsActivity.this, "Location Changed", Toast.LENGTH_LONG).show();
 
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    mMap.clear();
+                    mMap.addMarker(new MarkerOptions().position(x).title("My location").icon(BitmapDescriptorFactory.fromResource(R.drawable.house)));
+                    mMap.moveCamera(CameraUpdateFactory.newLatLng(x));
+                    mMap.moveCamera(CameraUpdateFactory.zoomBy(14));
+                    Toast.makeText(MapsActivity.this, "Location Changed", Toast.LENGTH_LONG).show();
                 }
-                mMap.clear();
-                mMap.addMarker(new MarkerOptions().position(x).title("My location").icon(BitmapDescriptorFactory.fromResource(R.drawable.house)));
-                mMap.moveCamera(CameraUpdateFactory.newLatLng(x));
-                mMap.moveCamera(CameraUpdateFactory.zoomBy(10));
-                Toast.makeText(MapsActivity.this, "Location Changed", Toast.LENGTH_LONG).show();
+
+                PlaceAutocompleteFragment autocompleteFragment = (PlaceAutocompleteFragment)
+                        getFragmentManager().findFragmentById(R.id.place_autocomplete_fragment);
+
+                autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
+                    @Override
+                    public void onPlaceSelected(Place place) {
+                        // TODO: Get info about the selected place.
+                        Log.i(TAG, "Place: " + place.getName());
+                    }
+
+                    @Override
+                    public void onError(Status status) {
+                        // TODO: Handle the error.
+                        Log.i(TAG, "An error occurred: " + status);
+                    }
+                });
+
             }
 
             @Override
@@ -132,10 +167,47 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
               LatLng  currentLocation = new LatLng(currentLatitude, currentLongitude);
 
+                Geocoder geo = new Geocoder(MapsActivity.this);
+                try {
+                    List<Address> addresses = geo.getFromLocation(currentLatitude, currentLongitude, 10);
+                    String adreess = addresses.get(0).getAddressLine(0);
+                    String country = addresses.get(0).getCountryName();
+                    String permises = addresses.get(0).getPremises();
+                    mMap.clear();
+                    mMap.addMarker(new MarkerOptions().position(currentLocation).title("Country:" + country + "\nAdress" + adreess + "\nPermises" + permises));
+                    mMap.moveCamera(CameraUpdateFactory.newLatLng(currentLocation));
+                    mMap.moveCamera(CameraUpdateFactory.zoomBy(14));
+                    Toast.makeText(MapsActivity.this, "Location Changed", Toast.LENGTH_LONG).show();
+
+                } catch (IOException e) {
+                    mMap.clear();
+                    mMap.addMarker(new MarkerOptions().position(currentLocation).title("My location").icon(BitmapDescriptorFactory.fromResource(R.drawable.house)));
+                    mMap.moveCamera(CameraUpdateFactory.newLatLng(currentLocation));
+                    mMap.moveCamera(CameraUpdateFactory.zoomBy(14));
+                    Toast.makeText(MapsActivity.this, "Location Changed", Toast.LENGTH_LONG).show();
+                }
+            }
+        });
+
+
+        PlaceAutocompleteFragment autocompleteFragment = (PlaceAutocompleteFragment)
+                getFragmentManager().findFragmentById(R.id.place_autocomplete_fragment);
+
+        autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
+            @Override
+            public void onPlaceSelected(Place place) {
+               String src=place.getName().toString();
+               LatLng latLng=place.getLatLng();
                 mMap.clear();
-                mMap.addMarker(new MarkerOptions().position(currentLocation).title("My location").icon(BitmapDescriptorFactory.fromResource(R.drawable.house)));
-                mMap.moveCamera(CameraUpdateFactory.newLatLng(currentLocation));
-                mMap.moveCamera(CameraUpdateFactory.zoomBy(10));
+                mMap.addMarker(new MarkerOptions().position(latLng).title(src));
+                mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+                mMap.moveCamera(CameraUpdateFactory.zoomBy(14));
+                Toast.makeText(MapsActivity.this, "place found", Toast.LENGTH_LONG).show();
+            }
+
+            @Override
+            public void onError(Status status) {
+                Log.i(TAG, "An error occurred: " + status);
             }
         });
 
@@ -146,8 +218,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
+        LatLng sydney = new LatLng(10.626714, 76.144667);
+        mMap.addMarker(new MarkerOptions().position(sydney).title("Vidya Academy"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
     }
 

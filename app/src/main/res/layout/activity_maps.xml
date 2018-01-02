@@ -33,16 +33,14 @@
             android:layout_margin="10dp"
             app:cardCornerRadius="5dp">
 
-            <com.rengwuxian.materialedittext.MaterialEditText
+            <fragment
+                android:id="@+id/place_autocomplete_fragment"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_alignParentStart="true"
                 android:layout_alignParentTop="true"
-                android:text="Search"
-                app:met_baseColor="#FFFFFFFF"
-                android:textSize="15sp"
-                android:paddingLeft="10dp"
-                android:drawableLeft="@drawable/ic_search_black_24dp"/>
+                android:name="com.google.android.gms.location.places.ui.PlaceAutocompleteFragment"
+                />
 
         </android.support.v7.widget.CardView>
 
