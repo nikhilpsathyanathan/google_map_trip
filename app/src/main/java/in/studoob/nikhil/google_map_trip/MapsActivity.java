@@ -4,6 +4,7 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Address;
@@ -13,6 +14,8 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.LocationProvider;
+import android.net.Uri;
+import android.provider.Settings;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
@@ -63,18 +66,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private GoogleMap mMap;
     private final String TAG = "123";
-    private EditText editText;
-    private GoogleApiClient mGoogleApiclient;
     private LocationManager locationManager;
-    LocationListener locationListener;
-    private double lat, lon;
+    private double lat = 10.5276, lon = 76.2144;
     String provider;
     Location getLastLocation;
     LatLng searchlocation;
     public static final int PERMISSIONS_REQUEST_LOCATION = 20;
-
     private List<Polyline> polylines;
-    private static final int[] COLORS = new int[]{R.color.red,R.color.yello,R.color.black,R.color.green,R.color.blue};
+    private static final int[] COLORS = new int[]{R.color.red, R.color.yello, R.color.black, R.color.green, R.color.blue};
 
 
     @Override
@@ -82,7 +81,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
 
+
+        Location local = new Location("Your location");
+        local.setLatitude(lat);
+        local.setLongitude(lon);
+        getLastLocation = local;
         checkLocationPermission();
+
         polylines = new ArrayList<>();
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
@@ -93,50 +98,28 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         provider = locationManager.getBestProvider(new Criteria(), false);
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            return;
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            locationManager.requestLocationUpdates(provider, 400, 1, this);
+            getLastLocation = locationManager.getLastKnownLocation(provider);
         }
-        locationManager.requestLocationUpdates(provider, 400, 1, this);
 
 
         FloatingActionButton fab = findViewById(R.id.mylocation);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                if (ContextCompat.checkSelfPermission(MapsActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                    Location location = locationManager.getLastKnownLocation(provider);
+                    mMap.clear();
+                    getLastLocation = location;
+                    if (location != null) {
+                        mMap.addMarker(new MarkerOptions().position(new LatLng(getLastLocation.getLatitude(), getLastLocation.getLongitude())).title("Your Location"));
+                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(getLastLocation.getLatitude(), getLastLocation.getLongitude()), 14));
+                        updateLocation(location);
 
 
-                  if(getLastLocation!=null){
-                      double currentLongitude = getLastLocation.getLongitude();
-                      double currentLatitude = getLastLocation.getLatitude();
-
-                      LatLng currentLocation = new LatLng(currentLatitude, currentLongitude);
-
-                      Geocoder geo = new Geocoder(MapsActivity.this);
-                      try {
-                          List<Address> addresses = geo.getFromLocation(currentLatitude, currentLongitude, 10);
-                          String adreess = addresses.get(0).getAddressLine(0);
-                          String country = addresses.get(0).getCountryName();
-                          String permises = addresses.get(0).getPremises();
-                          mMap.clear();
-                          mMap.addMarker(new MarkerOptions().position(currentLocation).title("Country:" + country + "\nAdress" + adreess + "\nPermises" + permises));
-                          mMap.moveCamera(CameraUpdateFactory.newLatLng(currentLocation));
-                          Toast.makeText(MapsActivity.this, "Location Changed", Toast.LENGTH_LONG).show();
-
-                      } catch (IOException e) {
-                          mMap.clear();
-                          mMap.addMarker(new MarkerOptions().position(currentLocation).title("My location").icon(BitmapDescriptorFactory.fromResource(R.drawable.house)));
-                          mMap.moveCamera(CameraUpdateFactory.newLatLng(currentLocation));
-                          Toast.makeText(MapsActivity.this, "Location Changed", Toast.LENGTH_LONG).show();
-                      }
-
-                  }
-                  else{
-                      Toast.makeText(MapsActivity.this, "Loading", Toast.LENGTH_LONG).show();
-                  }
-
+                    }
                 }
-
             }
         });
 
@@ -148,8 +131,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void onPlaceSelected(Place place) {
                 String src = place.getName().toString();
-                LatLng latLng = place.getLatLng();
-                searchlocation=latLng;
+                searchlocation = place.getLatLng();
+
                 getRoute(searchlocation);
 
             }
@@ -175,7 +158,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     protected void onPause() {
         super.onPause();
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-        locationManager.requestLocationUpdates(provider, 400, 1, this);
+            locationManager.requestLocationUpdates(provider, 400, 1, this);
         }
     }
 
@@ -186,7 +169,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
 
             Location location = locationManager.getLastKnownLocation(provider);
-            if ( location != null){
+            if (location != null) {
                 mMap.addMarker(new MarkerOptions().position(new LatLng(location.getLatitude(), location.getLongitude())).title("Your Location"));
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 14));
                 updateLocation(location);
@@ -198,17 +181,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onLocationChanged(Location location) {
-        Toast.makeText(MapsActivity.this,location+"",Toast.LENGTH_LONG).show();
-        mMap.clear();
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()),10));
+        Toast.makeText(MapsActivity.this, location.getAccuracy() + "", Toast.LENGTH_SHORT).show();
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 14));
         mMap.addMarker(new MarkerOptions().position(new LatLng(location.getLatitude(), location.getLongitude())).title("Your Location"));
-
         updateLocation(location);
 
     }
-    public void updateLocation(Location location){
-        if (location!=null) {
-            getLastLocation=location;
+
+    public void updateLocation(Location location) {
+        if (location != null) {
+            getLastLocation = location;
         }
     }
 
@@ -273,8 +255,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           String permissions[], int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         switch (requestCode) {
             case PERMISSIONS_REQUEST_LOCATION: {
                 if (grantResults.length > 0
@@ -297,9 +278,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onRoutingFailure(RouteException e) {
-        if(e != null) {
+        if (e != null) {
             Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
-        }else {
+        } else {
             Toast.makeText(this, "Something went wrong, Try again", Toast.LENGTH_SHORT).show();
         }
     }
@@ -311,25 +292,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onRoutingSuccess(ArrayList<Route> routes, int shortestRouteIndex) {
-        LatLng start =new LatLng(getLastLocation.getLatitude(),getLastLocation.getLongitude());
+        LatLng start = new LatLng(getLastLocation.getLatitude(), getLastLocation.getLongitude());
         CameraUpdate center = CameraUpdateFactory.newLatLng(start);
-        CameraUpdate zoom = CameraUpdateFactory.zoomTo(16);
+        CameraUpdate zoom = CameraUpdateFactory.zoomTo(14);
 
         mMap.moveCamera(center);
 
-
-        if(polylines.size()>0) {
+        if (polylines.size() > 0) {
             for (Polyline poly : polylines) {
                 poly.remove();
             }
         }
         mMap.clear();
         polylines = new ArrayList<>();
-        //add route(s) to the map.
-        float distance =0;
-        for (int i = 0; i <routes.size(); i++) {
-
-            //In case of more than 5 alternative routes
+        float distance = 0;
+        for (int i = 0; i < routes.size(); i++) {
             int colorIndex = i % COLORS.length;
 
             PolylineOptions polyOptions = new PolylineOptions();
@@ -338,18 +315,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             polyOptions.addAll(routes.get(i).getPoints());
             Polyline polyline = mMap.addPolyline(polyOptions);
             polylines.add(polyline);
-            distance=(routes.get(i).getDistanceValue())/1000;
+            distance = (routes.get(i).getDistanceValue()) / 1000;
             //"Route "+ (i+1) +
-            Toast.makeText(getApplicationContext(),"distance KM : "+distance +": duration mins : "+ (routes.get(i).getDurationValue())/60,Toast.LENGTH_LONG).show();
+            Toast.makeText(getApplicationContext(), "distance KM : " + distance + ": duration mins : " + (routes.get(i).getDurationValue()) / 60, Toast.LENGTH_LONG).show();
         }
 
-        // Start marker
         MarkerOptions options = new MarkerOptions();
         options.position(start);
         options.icon(BitmapDescriptorFactory.fromResource(R.drawable.end_green));
         mMap.addMarker(options);
 
-        // End marker
         options = new MarkerOptions();
         options.position(searchlocation);
         options.icon(BitmapDescriptorFactory.fromResource(R.drawable.start_blue));
@@ -358,21 +333,22 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onRoutingCancelled() {
-     //   erasePoly();
+        //   erasePoly();
 
     }
 
-    private void getRoute(LatLng pickuplatlang){
+    private void getRoute(LatLng pickuplatlang) {
         Routing routing = new Routing.Builder()
                 .travelMode(AbstractRouting.TravelMode.DRIVING)
                 .withListener(this)
                 .alternativeRoutes(false)
-                .waypoints(new LatLng(getLastLocation.getLatitude(),getLastLocation.getLongitude()), pickuplatlang)
+                .waypoints(new LatLng(getLastLocation.getLatitude(), getLastLocation.getLongitude()), pickuplatlang)
                 .build();
         routing.execute();
     }
-    private void erasePoly(){
-        for(Polyline line : polylines){
+
+    private void erasePoly() {
+        for (Polyline line : polylines) {
             line.remove();
         }
         polylines.clear();
