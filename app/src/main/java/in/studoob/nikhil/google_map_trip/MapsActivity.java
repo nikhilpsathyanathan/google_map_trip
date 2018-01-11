@@ -2,6 +2,7 @@ package in.studoob.nikhil.google_map_trip;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Criteria;
@@ -19,6 +20,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -70,6 +72,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private static final int[] COLORS = new int[]{R.color.blue, R.color.yello, R.color.black, R.color.green, R.color.blue};
     private final static int PLAY_SERVICES_RESOLUTION_REQUEST = 150;
     private final static int PERMISSIONS_REQUEST_LOCATION = 220;
+    private LatLng latlong = new LatLng(10.5700, 76.0885);
+    BottomSheetBehavior bottomSheetBehavior;
+    Marker desti;
+    int distance,duration;
+
+    TextView auto,mini,suv;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,11 +99,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         final TextView ride = findViewById(R.id.sheet_ride);
         LinearLayout llBottomSheet = findViewById(R.id.bottom_sheet);
 
-        BottomSheetBehavior bottomSheetBehavior = BottomSheetBehavior.from(llBottomSheet);
+        bottomSheetBehavior = BottomSheetBehavior.from(llBottomSheet);
         bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
-        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
-        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
-        bottomSheetBehavior.setPeekHeight(50);
+     //   bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+       // bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
+        bottomSheetBehavior.setPeekHeight(60);
         bottomSheetBehavior.setHideable(false);
         bottomSheetBehavior.setBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
             @Override
@@ -114,6 +122,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
+        auto = findViewById(R.id.auto_fare);
+        mini = findViewById(R.id.mini_fare);
+        suv = findViewById(R.id.suv_fare);
+
         bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
         FloatingActionButton fab = findViewById(R.id.mylocation);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -121,19 +133,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             public void onClick(View view) {
                 if (ContextCompat.checkSelfPermission(MapsActivity.this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                     Location location = locationManager.getLastKnownLocation(provider);
-                    mMap.clear();
-                    CircleOptions circleOptions = new CircleOptions()
-                            .center(new LatLng(location.getLatitude(),location.getLongitude()))
-                            .strokeWidth(10)
-                            .strokeColor(Color.TRANSPARENT)
-                            .fillColor(Color.argb(50, 0, 150, 250))
-                            .radius(1000);
-                    getLastLocation = location;
                     if (location != null) {
+                        updateLocation(location);
+                        mMap.clear();
+                        CircleOptions circleOptions = new CircleOptions()
+                                .center(new LatLng(getLastLocation.getLatitude(),getLastLocation.getLongitude()))
+                                .strokeWidth(10)
+                                .strokeColor(Color.TRANSPARENT)
+                                .fillColor(Color.argb(50, 0, 150, 250))
+                                .radius(1000);
                         mMap.addMarker(new MarkerOptions().position(new LatLng(getLastLocation.getLatitude(), getLastLocation.getLongitude())).title("Your Location"));
                         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(getLastLocation.getLatitude(), getLastLocation.getLongitude()), 14));
                         Circle circle = mMap.addCircle(circleOptions);
-                        updateLocation(location);
                     }
                 }
             }
@@ -162,6 +173,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             locationManager.requestLocationUpdates(provider, 1000, 10, this);
         }
+
+
+
     }
 
     public  void  getLocation(){
@@ -179,7 +193,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onLocationChanged(Location location) {
-        Toast.makeText(MapsActivity.this, location.getAccuracy() + "", Toast.LENGTH_SHORT).show();
+        Toast.makeText(MapsActivity.this, "Accuracy"+location.getAccuracy() + "Meter", Toast.LENGTH_SHORT).show();
      //   mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 14));
        // mMap.addMarker(new MarkerOptions().position(new LatLng(location.getLatitude(), location.getLongitude())).title("Your Location"));
         updateLocation(location);
@@ -210,12 +224,25 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             Location location = locationManager.getLastKnownLocation(provider);
             if (location != null) {
-                mMap.addMarker(new MarkerOptions().position(new LatLng(location.getLatitude(), location.getLongitude())).title("Your Location"));
+                mMap.addMarker(new MarkerOptions().position(latlong).title("Default location"));
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 14));
                 updateLocation(location);
 
             }
         }
+
+        mMap.setOnInfoWindowClickListener(
+                new GoogleMap.OnInfoWindowClickListener(){
+                    public void onInfoWindowClick(Marker marker){
+                        if(marker.getTitle().equalsIgnoreCase(destination)) {
+                            bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+                            auto.setText("FARE = "+distance*5+"₹");
+                            mini.setText("FARE = "+distance*10+"₹");
+                            suv.setText("FARE = "+distance*15+"₹");
+                        }
+                    }
+                }
+        );
 
     }
 
@@ -306,8 +333,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
         mMap.clear();
         polylines = new ArrayList<>();
-        float distance = 0;
-        int duration = 0;
         for (int i = 0; i < routes.size(); i++) {
             int colorIndex = i % COLORS.length;
 
@@ -332,8 +357,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         destin.position(searchlocation);
         destin.title(destination);
         destin.snippet("distance KM : "+distance+" duration MINS : "+duration);
-       Marker desti = mMap.addMarker(destin);
+        desti = mMap.addMarker(destin);
        desti.showInfoWindow();
+
+
 
 
     }
@@ -362,7 +389,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onInfoWindowClick(Marker marker) {
-        Toast.makeText(this, "Info window clicked",
-                Toast.LENGTH_SHORT).show();
+        Toast.makeText(MapsActivity.this, "Info window clicked"+marker,Toast.LENGTH_SHORT).show();
     }
 }
